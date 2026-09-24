@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Commande confirmée — Ineska Burea</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --black: #0d0d0d; --white: #f7f4f0; --offwhite: #ece9e4;
+      --gray-light: #d8d4ce; --gray-mid: #999490; --gray-dark: #4a4845;
+      --gold: #b89a6e; --gold-light: #d4b98a; --gold-dark: #8a6e48;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Jost', sans-serif; background: var(--black); color: var(--white); font-weight: 300; min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
+
+    /* HEADER */
+    .confirm-header { padding: 2rem; text-align: center; border-bottom: 1px solid rgba(184,154,110,0.2); }
+    .confirm-brand { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 300; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold-light); }
+
+    /* HERO CONFIRMATION */
+    .confirm-hero {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 5rem 2rem;
+      position: relative; overflow: hidden;
+    }
+    .confirm-hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+              radial-gradient(ellipse 80% 60% at 50% 50%, rgba(184,154,110,0.12) 0%, transparent 65%),
+              radial-gradient(ellipse 40% 40% at 20% 80%, rgba(184,154,110,0.06) 0%, transparent 55%);
+      pointer-events: none;
+    }
+    /* Lignes décoratives */
+    .confirm-hero::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(90deg, transparent 0 120px, rgba(255,255,255,0.015) 120px 121px);
+      pointer-events: none;
+    }
+
+    .confirm-box {
+      max-width: 700px; width: 100%;
+      position: relative; z-index: 1;
+      animation: confirmAppear 0.8s ease forwards;
+    }
+
+    /* Icône de succès */
+    .confirm-icon {
+      width: 80px; height: 80px; border-radius: 50%;
+      border: 1px solid var(--gold);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 3rem;
+      font-size: 2rem;
+      animation: iconPulse 2s ease infinite;
+    }
+
+    .confirm-eyebrow {
+      font-size: 0.65rem; letter-spacing: 0.35em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 1.2rem; text-align: center;
+      display: flex; align-items: center; justify-content: center; gap: 1rem;
+    }
+    .confirm-eyebrow::before, .confirm-eyebrow::after {
+      content: ''; flex: 1; max-width: 60px; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold-light));
+    }
+    .confirm-eyebrow::after { background: linear-gradient(90deg, var(--gold-light), transparent); }
+
+    .confirm-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 300; line-height: 1.1;
+      text-align: center; margin-bottom: 1.5rem; letter-spacing: -0.01em;
+    }
+    .confirm-title em { font-style: italic; color: var(--gold-light); }
+
+    .confirm-subtitle {
+      font-size: 0.95rem; color: var(--gray-mid); text-align: center; line-height: 1.8; margin-bottom: 3rem;
+    }
+
+    /* Récap commande */
+    .confirm-recap {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(184,154,110,0.25);
+      padding: 2.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .recap-title {
+      font-size: 0.62rem; letter-spacing: 0.3em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 1.5rem; padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .recap-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+    }
+    .recap-item { display: flex; flex-direction: column; gap: 0.3rem; }
+    .recap-label { font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gray-mid); }
+    .recap-value { font-size: 0.95rem; color: var(--white); }
+    .recap-product { grid-column: span 2; padding: 1.2rem; background: rgba(184,154,110,0.08); border-left: 2px solid var(--gold); margin-top: 1rem; }
+    .recap-product-name { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; font-weight: 300; color: var(--white); margin-bottom: 0.3rem; }
+    .recap-product-price { font-size: 0.8rem; color: var(--gold-light); letter-spacing: 0.1em; }
+
+    /* Étapes suivantes */
+    .confirm-steps {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+      background: rgba(255,255,255,0.08); margin-bottom: 2.5rem;
+    }
+    .step-item {
+      background: rgba(13,13,13,0.8);
+      padding: 1.5rem 1.2rem; text-align: center;
+    }
+    .step-num {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2rem; font-weight: 300; color: var(--gold);
+      line-height: 1; margin-bottom: 0.5rem;
+    }
+    .step-title { font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--white); margin-bottom: 0.4rem; font-weight: 400; }
+    .step-text { font-size: 0.78rem; color: var(--gray-mid); line-height: 1.5; }
+
+    /* Infos paiement */
+    .payment-info {
+      background: rgba(184,154,110,0.08); border: 1px solid rgba(184,154,110,0.3);
+      padding: 2rem; margin-bottom: 2.5rem;
+    }
+    .payment-title { font-size: 0.62rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gold); margin-bottom: 1.2rem; }
+    .payment-method { display: flex; flex-direction: column; gap: 0.8rem; }
+    .payment-method-item { display: flex; align-items: flex-start; gap: 0.8rem; font-size: 0.88rem; color: var(--gray-light); line-height: 1.6; }
+    .payment-method-item::before { content: '→'; color: var(--gold); flex-shrink: 0; }
+
+    /* Boutons */
+    .confirm-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .btn-primary {
+      flex: 1; min-width: 200px;
+      display: flex; align-items: center; justify-content: center; gap: 0.8rem;
+      background: var(--white); color: var(--black);
+      font-family: 'Jost', sans-serif; font-size: 0.68rem; font-weight: 400;
+      letter-spacing: 0.28em; text-transform: uppercase;
+      text-decoration: none; padding: 1.1rem 1.5rem;
+      border: none; cursor: pointer; position: relative; overflow: hidden;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+    .btn-primary:hover { background: var(--gold-light); }
+    .btn-gold {
+      flex: 1; min-width: 200px;
+      display: flex; align-items: center; justify-content: center; gap: 0.8rem;
+      background: transparent; color: var(--gold-light);
+      font-family: 'Jost', sans-serif; font-size: 0.68rem; font-weight: 400;
+      letter-spacing: 0.28em; text-transform: uppercase;
+      text-decoration: none; padding: 1.1rem 1.5rem;
+      border: 1px solid rgba(184,154,110,0.5); cursor: pointer;
+      transition: border-color 0.3s ease, background 0.3s ease;
+    }
+    .btn-gold:hover { border-color: var(--gold); background: rgba(184,154,110,0.1); }
+
+    /* FOOTER */
+    .confirm-footer {
+      padding: 2rem; text-align: center;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gray-dark);
+    }
+    .confirm-footer a { color: var(--gray-mid); text-decoration: none; transition: color 0.25s; }
+    .confirm-footer a:hover { color: var(--gold-light); }
+    .confirm-footer-dot { margin: 0 0.5rem; }
+
+    @keyframes confirmAppear {
+      from { opacity: 0; transform: translateY(40px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes iconPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(184,154,110,0); }
+      50% { box-shadow: 0 0 0 12px rgba(184,154,110,0.1); }
+    }
+
+    @media (max-width: 600px) {
+      .recap-grid { grid-template-columns: 1fr; }
+      .recap-product { grid-column: span 1; }
+      .confirm-steps { grid-template-columns: 1fr; }
+      .confirm-actions { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="confirm-header">
+  <p class="confirm-brand">Ineska Burea</p>
+</header>
+
+<!-- HERO CONFIRMATION -->
+<main class="confirm-hero">
+  <div class="confirm-box">
+
+    <div class="confirm-icon">✓</div>
+
+    <p class="confirm-eyebrow">Commande reçue</p>
+    <h1 class="confirm-title">Merci pour votre<br/><em>commande !</em></h1>
+    <p class="confirm-subtitle">Votre commande a bien été enregistrée. Vous allez recevoir un email de confirmation dans les prochaines minutes.</p>
+
+    <!-- Récapitulatif -->
+    <div class="confirm-recap">
+      <p class="recap-title">Récapitulatif de votre commande</p>
+      <div class="recap-grid" id="recapGrid">
+        <div class="recap-item"><span class="recap-label">Client</span><span class="recap-value" id="recapNom">—</span></div>
+        <div class="recap-item"><span class="recap-label">Email</span><span class="recap-value" id="recapEmail">—</span></div>
+        <div class="recap-item"><span class="recap-label">Téléphone</span><span class="recap-value" id="recapTel">—</span></div>
+        <div class="recap-item"><span class="recap-label">Mode de paiement</span><span class="recap-value" id="recapPaiement">—</span></div>
+        <div class="recap-item" style="grid-column:span 2"><span class="recap-label">Adresse de livraison</span><span class="recap-value" id="recapAdresse">—</span></div>
+        <div class="recap-product" id="recapProductsWrap" style="grid-column:span 2; display:flex; flex-direction:column; gap:0.8rem;">
+          <!-- Articles injectés par JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Étapes suivantes -->
+    <div class="confirm-steps">
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <div class="step-title">Confirmation</div>
+        <div class="step-text">Vous recevez un email de confirmation avec le récapitulatif</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-title">Paiement</div>
+        <div class="step-text">Effectuez votre paiement par virement ou chèque selon les instructions</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-title">Expédition</div>
+        <div class="step-text">Votre colis est expédié sous 2 à 5 jours ouvrés après réception du paiement</div>
+      </div>
+    </div>
+
+    <!-- Infos paiement -->
+    <div class="payment-info">
+      <p class="payment-title">Comment effectuer votre paiement</p>
+      <div class="payment-method">
+        <div class="payment-method-item">Virement bancaire : vous recevrez notre RIB par email dans les 24h</div>
+        <div class="payment-method-item">Chèque : à l'ordre de Ineska Burea, 112 avenue Paul Valéry, 83160 La Valette du Var</div>
+        <div class="payment-method-item">Votre commande sera traitée dès réception du paiement</div>
+      </div>
+    </div>
+
+    <!-- Boutons -->
+    <div class="confirm-actions">
+      <a href="decouvrir-nos-produits.html" class="btn-primary">← Retour à la boutique</a>
+    </div>
+
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer class="confirm-footer">
+  <strong style="color:var(--gray-mid)">Ineska Burea</strong>
+  <span class="confirm-footer-dot">·</span>
+  <a href="mailto:contact@ineskaburea.fr">contact@ineskaburea.fr</a>
+  <span class="confirm-footer-dot">·</span>
+  <a href="documents/CGV%20INESK%20BEAUTE.pdf" download>CGV</a>
+  <span class="confirm-footer-dot">·</span>
+  <a href="#">Politique de confidentialité</a>
+</footer>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    function money(n) { return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" }); }
+
+    const finalOrder = sessionStorage.getItem('finalOrder');
+    const legacyOrder = sessionStorage.getItem('order');
+
+    if (finalOrder) {
+      const o = JSON.parse(finalOrder);
+      document.getElementById('recapNom').textContent      = o.prenom + ' ' + o.nom;
+      document.getElementById('recapEmail').textContent    = o.email;
+      document.getElementById('recapTel').textContent      = o.tel;
+      document.getElementById('recapPaiement').textContent = o.paymentMethod;
+      document.getElementById('recapAdresse').textContent  = o.adresse + ', ' + o.cp + ' ' + o.ville;
+
+      const wrap = document.getElementById('recapProductsWrap');
+      wrap.innerHTML = o.items.map(item => `
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem;">
+        <div>
+          <div class="recap-product-name" style="font-size:1.1rem">${item.name}</div>
+          <div style="font-size:0.75rem;color:var(--gray-mid)">Quantité : ${item.qty}</div>
+        </div>
+        <div class="recap-product-price">${money(item.price * item.qty)}</div>
+      </div>
+    `).join('<div style="height:1px;background:rgba(255,255,255,0.1)"></div>') +
+              `<div style="height:1px;background:rgba(184,154,110,0.3);margin:0.5rem 0"></div>
+       <div style="display:flex; justify-content:space-between; align-items:center;">
+         <strong style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--white)">Total</strong>
+         <strong class="recap-product-price" style="font-size:1.4rem">${money(o.total)}</strong>
+       </div>`;
+
+      sessionStorage.removeItem('finalOrder');
+
+    } else if (legacyOrder) {
+      // Compatibilité avec l'ancien système (produit unique)
+      const o = JSON.parse(legacyOrder);
+      document.getElementById('recapNom').textContent      = o.prenom + ' ' + o.nom;
+      document.getElementById('recapEmail').textContent    = o.email;
+      document.getElementById('recapTel').textContent      = o.tel;
+      document.getElementById('recapPaiement').textContent = 'À définir';
+      document.getElementById('recapAdresse').textContent  = o.adresse + ', ' + o.cp + ' ' + o.ville;
+
+      const wrap = document.getElementById('recapProductsWrap');
+      wrap.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div class="recap-product-name" style="font-size:1.1rem">${o.produit}</div>
+          <div style="font-size:0.75rem;color:var(--gray-mid)">Quantité : ${o.qty}</div>
+        </div>
+        <div class="recap-product-price">${o.prix}</div>
+      </div>`;
+
+      sessionStorage.removeItem('order');
+    }
+  });
+</script>
+</body>
+</html>
