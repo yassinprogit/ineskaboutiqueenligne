@@ -76,6 +76,20 @@
     }
     .confirm-title em { font-style: italic; color: var(--gold-light); }
 
+    .order-code-box {
+      display: none; text-align: center; margin: -1.5rem auto 3rem;
+      padding: 1.2rem 1.5rem; border: 1px solid rgba(184,154,110,0.45);
+      background: rgba(184,154,110,0.08); max-width: 360px;
+    }
+    .order-code-label {
+      font-size: 0.58rem; letter-spacing: 0.3em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 0.5rem;
+    }
+    .order-code-value {
+      font-family: 'Cormorant Garamond', serif; font-size: 1.9rem;
+      font-weight: 400; letter-spacing: 0.12em; color: var(--white);
+    }
+    .order-code-hint { font-size: 0.72rem; color: var(--gray-mid); margin-top: 0.4rem; }
     .confirm-subtitle {
       font-size: 0.95rem; color: var(--gray-mid); text-align: center; line-height: 1.8; margin-bottom: 3rem;
     }
@@ -180,6 +194,51 @@
       .confirm-actions { flex-direction: column; }
     }
   </style>
+  <!-- EmailJS -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script>
+    if (window.emailjs) emailjs.init({ publicKey: "Kl3fTW1TeYzGMnArm" });
+  </script>
+
+  <!-- Firebase : enregistrement des commandes payées -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp }
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB4DuOGE1BjjDU0MdAnd633sEPjCFRkc6A",
+      authDomain: "ineska-commande.firebaseapp.com",
+      projectId: "ineska-commande",
+      storageBucket: "ineska-commande.firebasestorage.app",
+      messagingSenderId: "950786351990",
+      appId: "1:950786351990:web:611b30b96b0a4f198fd057",
+      measurementId: "G-QQ4PMS144K"
+    };
+
+    const db = getFirestore(initializeApp(firebaseConfig));
+
+    window.saveOrderToFirebase = (order) => addDoc(collection(db, "commandes"), {
+      code: order.code,
+      statut: "payee",
+      stripeSessionId: order.stripeSessionId,
+      client: {
+        prenom: order.prenom,
+        nom: order.nom,
+        email: order.email,
+        telephone: order.tel
+      },
+      livraison: {
+        adresse: order.adresse,
+        codePostal: order.cp,
+        ville: order.ville
+      },
+      articles: order.items.map(i => ({ nom: i.name, prixUnitaire: i.price, quantite: i.qty })),
+      total: order.total,
+      modePaiement: order.paymentMethod,
+      createdAt: serverTimestamp()
+    });
+  </script>
 </head>
 <body>
 
@@ -196,7 +255,12 @@
 
     <p class="confirm-eyebrow">Commande reçue</p>
     <h1 class="confirm-title">Merci pour votre<br/><em>commande !</em></h1>
-    <p class="confirm-subtitle">Votre commande a bien été enregistrée. Vous allez recevoir un email de confirmation dans les prochaines minutes.</p>
+    <p class="confirm-subtitle" id="confirmSubtitle">Votre commande a bien été enregistrée. Vous allez recevoir un email de confirmation dans les prochaines minutes.</p>
+    <div class="order-code-box" id="orderCodeBox">
+      <div class="order-code-label">Numéro de commande</div>
+      <div class="order-code-value" id="orderCode">—</div>
+      <div class="order-code-hint">À rappeler pour toute question sur votre commande</div>
+    </div>
 
     <!-- Récapitulatif -->
     <div class="confirm-recap">
@@ -212,39 +276,9 @@
         </div>
       </div>
     </div>
-
-    <!-- Étapes suivantes -->
-    <div class="confirm-steps">
-      <div class="step-item">
-        <div class="step-num">1</div>
-        <div class="step-title">Confirmation</div>
-        <div class="step-text">Vous recevez un email de confirmation avec le récapitulatif</div>
-      </div>
-      <div class="step-item">
-        <div class="step-num">2</div>
-        <div class="step-title">Paiement</div>
-        <div class="step-text">Effectuez votre paiement par virement ou chèque selon les instructions</div>
-      </div>
-      <div class="step-item">
-        <div class="step-num">3</div>
-        <div class="step-title">Expédition</div>
-        <div class="step-text">Votre colis est expédié sous 2 à 5 jours ouvrés après réception du paiement</div>
-      </div>
-    </div>
-
-    <!-- Infos paiement -->
-    <div class="payment-info">
-      <p class="payment-title">Comment effectuer votre paiement</p>
-      <div class="payment-method">
-        <div class="payment-method-item">Virement bancaire : vous recevrez notre RIB par email dans les 24h</div>
-        <div class="payment-method-item">Chèque : à l'ordre de Ineska Burea, 112 avenue Paul Valéry, 83160 La Valette du Var</div>
-        <div class="payment-method-item">Votre commande sera traitée dès réception du paiement</div>
-      </div>
-    </div>
-
     <!-- Boutons -->
     <div class="confirm-actions">
-      <a href="decouvrir-nos-produits.html" class="btn-primary">← Retour à la boutique</a>
+      <a href="boutique.html" class="btn-primary">← Retour à la boutique</a>
     </div>
 
   </div>
@@ -262,37 +296,114 @@
 </footer>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    function money(n) { return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" }); }
+  const DEBUG_ORDER = true; // Passer à false une fois que tout fonctionne
 
+  function money(n) { return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" }); }
+
+  function waitFor(check, ms) {
+    return new Promise((resolve, reject) => {
+      const start = Date.now();
+      (function loop() {
+        if (check()) return resolve();
+        if (Date.now() - start > ms) return reject({ text: 'chargement trop long' });
+        setTimeout(loop, 100);
+      })();
+    });
+  }
+
+  function withTimeout(promise, ms, label) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject({ text: label + ' : délai dépassé' }), ms))
+    ]);
+  }
+
+  function sendConfirmationEmail(o) {
+    if (!window.emailjs) return Promise.reject({ text: "EmailJS ne s'est pas chargé" });
+    return emailjs.send('service_abc123', 'template_dt29ezt', {
+      order_number: o.code,
+      to_name: o.prenom + ' ' + o.nom,
+      to_email: o.email,
+      customer_phone: o.tel,
+      order_items: o.items.map(i => `- ${i.name} × ${i.qty} = ${money(i.price * i.qty)}`).join('\n'),
+      order_total: money(o.total),
+      payment_method: o.paymentMethod,
+      delivery_address: o.adresse + ', ' + o.cp + ' ' + o.ville
+    });
+  }
+
+  function displayOrder(o) {
+    if (o.code) {
+      document.getElementById('orderCode').textContent = o.code;
+      document.getElementById('orderCodeBox').style.display = 'block';
+    }
+    document.getElementById('recapNom').textContent      = o.prenom + ' ' + o.nom;
+    document.getElementById('recapEmail').textContent    = o.email;
+    document.getElementById('recapTel').textContent      = o.tel;
+    document.getElementById('recapPaiement').textContent = o.paymentMethod;
+    document.getElementById('recapAdresse').textContent  = o.adresse + ', ' + o.cp + ' ' + o.ville;
+
+    document.getElementById('recapProductsWrap').innerHTML = o.items.map(item => `
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem;">
+      <div>
+        <div class="recap-product-name" style="font-size:1.1rem">${item.name}</div>
+        <div style="font-size:0.75rem;color:var(--gray-mid)">Quantité : ${item.qty}</div>
+      </div>
+      <div class="recap-product-price">${money(item.price * item.qty)}</div>
+    </div>
+  `).join('<div style="height:1px;background:rgba(255,255,255,0.1)"></div>') +
+            `<div style="height:1px;background:rgba(184,154,110,0.3);margin:0.5rem 0"></div>
+     <div style="display:flex; justify-content:space-between; align-items:center;">
+       <strong style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--white)">Total</strong>
+       <strong class="recap-product-price" style="font-size:1.4rem">${money(o.total)}</strong>
+     </div>`;
+  }
+
+  document.addEventListener('DOMContentLoaded', async function() {
+    const sessionId  = new URLSearchParams(window.location.search).get('session_id');
     const finalOrder = sessionStorage.getItem('finalOrder');
     const legacyOrder = sessionStorage.getItem('order');
+    const subtitle = document.getElementById('confirmSubtitle');
 
     if (finalOrder) {
       const o = JSON.parse(finalOrder);
-      document.getElementById('recapNom').textContent      = o.prenom + ' ' + o.nom;
-      document.getElementById('recapEmail').textContent    = o.email;
-      document.getElementById('recapTel').textContent      = o.tel;
-      document.getElementById('recapPaiement').textContent = o.paymentMethod;
-      document.getElementById('recapAdresse').textContent  = o.adresse + ', ' + o.cp + ' ' + o.ville;
+      displayOrder(o);
 
-      const wrap = document.getElementById('recapProductsWrap');
-      wrap.innerHTML = o.items.map(item => `
-      <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem;">
-        <div>
-          <div class="recap-product-name" style="font-size:1.1rem">${item.name}</div>
-          <div style="font-size:0.75rem;color:var(--gray-mid)">Quantité : ${item.qty}</div>
-        </div>
-        <div class="recap-product-price">${money(item.price * item.qty)}</div>
-      </div>
-    `).join('<div style="height:1px;background:rgba(255,255,255,0.1)"></div>') +
-              `<div style="height:1px;background:rgba(184,154,110,0.3);margin:0.5rem 0"></div>
-       <div style="display:flex; justify-content:space-between; align-items:center;">
-         <strong style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--white)">Total</strong>
-         <strong class="recap-product-price" style="font-size:1.4rem">${money(o.total)}</strong>
-       </div>`;
+      // Pas de retour de Stripe = paiement non confirmé : on n'enregistre rien
+      if (!sessionId || !/^cs_(test|live)_/.test(sessionId)) {
+        subtitle.textContent = "Nous n'avons pas reçu la confirmation de votre paiement. Si vous avez été débité, contactez-nous en indiquant votre numéro de commande.";
+        return;
+      }
 
-      sessionStorage.removeItem('finalOrder');
+      // Évite un double enregistrement si la page est rechargée
+      if (sessionStorage.getItem('saved_' + o.code)) return;
+
+      o.stripeSessionId = sessionId;
+      subtitle.textContent = "Paiement reçu. Enregistrement de votre commande...";
+
+      const [firebaseResult, emailResult] = await Promise.allSettled([
+        waitFor(() => typeof window.saveOrderToFirebase === 'function', 6000)
+                .then(() => withTimeout(window.saveOrderToFirebase(o), 8000, 'Firebase')),
+        withTimeout(sendConfirmationEmail(o), 8000, 'EmailJS')
+      ]);
+
+      if (firebaseResult.status === 'fulfilled') {
+        sessionStorage.setItem('saved_' + o.code, '1');
+        sessionStorage.removeItem('finalOrder');
+        subtitle.textContent = "Votre paiement est confirmé et votre commande est enregistrée. Un email récapitulatif vous a été envoyé.";
+      } else {
+        subtitle.textContent = "Votre paiement est confirmé. Conservez votre numéro de commande, nous revenons vers vous rapidement.";
+      }
+
+      if (firebaseResult.status === 'rejected') console.error('Erreur Firebase :', firebaseResult.reason);
+      if (emailResult.status === 'rejected') console.error('Erreur EmailJS :', emailResult.reason);
+
+      if (DEBUG_ORDER && (firebaseResult.status === 'rejected' || emailResult.status === 'rejected')) {
+        const describe = r => (r && (r.text || r.message || r.code)) || 'erreur inconnue';
+        alert('Diagnostic de la commande ' + o.code + ' :\n\n'
+                + 'Firebase : ' + (firebaseResult.status === 'fulfilled' ? 'OK' : 'ÉCHEC — ' + describe(firebaseResult.reason)) + '\n'
+                + 'Email : ' + (emailResult.status === 'fulfilled' ? 'OK' : 'ÉCHEC — ' + describe(emailResult.reason)));
+      }
 
     } else if (legacyOrder) {
       // Compatibilité avec l'ancien système (produit unique)
@@ -302,9 +413,7 @@
       document.getElementById('recapTel').textContent      = o.tel;
       document.getElementById('recapPaiement').textContent = 'À définir';
       document.getElementById('recapAdresse').textContent  = o.adresse + ', ' + o.cp + ' ' + o.ville;
-
-      const wrap = document.getElementById('recapProductsWrap');
-      wrap.innerHTML = `
+      document.getElementById('recapProductsWrap').innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <div>
           <div class="recap-product-name" style="font-size:1.1rem">${o.produit}</div>
@@ -312,7 +421,6 @@
         </div>
         <div class="recap-product-price">${o.prix}</div>
       </div>`;
-
       sessionStorage.removeItem('order');
     }
   });

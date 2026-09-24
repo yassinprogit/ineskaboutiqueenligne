@@ -198,13 +198,6 @@
       .step-sep { width: 16px; }
     }
   </style>
-  <!-- EmailJS -->
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-  <script>
-    (function() {
-      emailjs.init({ publicKey: "Kl3fTW1TeYzGMnArm" });
-    })();
-  </script>
 </head>
 <body>
 
@@ -350,6 +343,36 @@
   });
 
   // Validation de la commande
+  // ── Liens de paiement Stripe ─────────────────────────────────
+  const STRIPE_LINKS = {
+    'Fer à Gaufrer Texture & Volume':      'https://buy.stripe.com/test_14A6oB9YT0OPbm2fMd8IU01',
+    'Tête Malléable Professionnelle 50cm': 'https://buy.stripe.com/test_4gMeV74Ez699fCi2Zr8IU02'
+  };
+  const STRIPE_LINK_BOTH = 'https://buy.stripe.com/test_3cIcMZ6MH7dd3TA6bD8IU00';
+
+  // ── Numéro de commande unique : IB-AAMMJJ-XXXX ───────────────
+  function generateOrderCode() {
+    const d = new Date();
+    const date = String(d.getFullYear()).slice(2)
+            + String(d.getMonth() + 1).padStart(2, '0')
+            + String(d.getDate()).padStart(2, '0');
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let rand = '';
+    for (let i = 0; i < 4; i++) rand += chars[Math.floor(Math.random() * chars.length)];
+    return `IB-${date}-${rand}`;
+  }
+
+  function buildStripeUrl(order) {
+    const base = (order.items.length === 1 && STRIPE_LINKS[order.items[0].name])
+            ? STRIPE_LINKS[order.items[0].name]
+            : STRIPE_LINK_BOTH;
+    return base
+            + '?client_reference_id=' + encodeURIComponent(order.code)
+            + '&prefilled_email=' + encodeURIComponent(order.email);
+  }
+
+  // La commande est gardée en mémoire le temps du paiement.
+  // Elle sera enregistrée dans Firebase au retour de Stripe (page de confirmation).
   document.getElementById('btnValidate').addEventListener('click', () => {
     const form = document.getElementById('deliveryForm');
     if (!form.checkValidity()) {
@@ -357,75 +380,27 @@
       return;
     }
 
-    const payMethod = document.querySelector('input[name="payMethod"]:checked').value;
-    const payLabels = { stripe: "Carte bancaire (Stripe)", virement: "Virement bancaire", cheque: "Chèque", especes: "Espèces" };
-
     const order = {
-      prenom: document.getElementById('prenom').value,
-      nom: document.getElementById('nom').value,
-      email: document.getElementById('email').value,
-      tel: document.getElementById('tel').value || "Non renseigné",
-      adresse: document.getElementById('adresse').value,
-      cp: document.getElementById('cp').value,
-      ville: document.getElementById('ville').value,
-      paymentMethod: payLabels[payMethod],
+      code: generateOrderCode(),
+      prenom: document.getElementById('prenom').value.trim(),
+      nom: document.getElementById('nom').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      tel: document.getElementById('tel').value.trim() || 'Non renseigné',
+      adresse: document.getElementById('adresse').value.trim(),
+      cp: document.getElementById('cp').value.trim(),
+      ville: document.getElementById('ville').value.trim(),
+      paymentMethod: 'Carte bancaire (Stripe)',
       items: cart,
       total: cart.reduce((sum, item) => sum + item.price * item.qty, 0)
     };
 
     const btn = document.getElementById('btnValidate');
-    const originalLabel = btn.innerHTML;
-    btn.innerHTML = payMethod === 'stripe'
-            ? '<span>Redirection vers Stripe...</span>'
-            : '<span>Envoi en cours...</span>';
+    btn.innerHTML = '<span>Redirection vers le paiement...</span>';
     btn.disabled = true;
 
-    const itemsList = order.items.map(i => `- ${i.name} × ${i.qty} = ${money(i.price * i.qty)}`).join('\n');
-
-    const emailParams = {
-      to_name: order.prenom + ' ' + order.nom,
-      to_email: order.email,
-      order_items: itemsList,
-      order_total: money(order.total),
-      payment_method: order.paymentMethod,
-      delivery_address: order.adresse + ', ' + order.cp + ' ' + order.ville
-    };
-
-    const STRIPE_LINKS = {
-      'Fer à Gaufrer Texture & Volume':       'https://buy.stripe.com/test_14A6oB9YT0OPbm2fMd8IU01',
-      'Tête Malléable Professionnelle 50cm':  'https://buy.stripe.com/test_4gMeV74Ez699fCi2Zr8IU02'
-    };
-    const STRIPE_LINK_BOTH = 'https://buy.stripe.com/test_3cIcMZ6MH7dd3TA6bD8IU00';
-
-    // Choisit le lien selon le contenu du panier
-    let stripeUrl;
-    if (cart.length === 1) {
-      stripeUrl = STRIPE_LINKS[cart[0].name] || STRIPE_LINK_BOTH;
-    } else {
-      stripeUrl = STRIPE_LINK_BOTH;
-    }
-
-    emailjs.send('service_abc123', 'template_dt29ezt', emailParams)
-            .then(() => {
-              sessionStorage.setItem('finalOrder', JSON.stringify(order));
-              sessionStorage.removeItem('checkoutCart');
-              if (payMethod === 'stripe') {
-                window.location.href = stripeUrl;
-              } else {
-                window.location.href = 'confirmation-commande.html';
-              }
-            })
-            .catch((err) => {
-              console.error("Erreur EmailJS :", err);
-              // On continue même si l'email échoue, pour ne jamais bloquer le client
-              sessionStorage.setItem('finalOrder', JSON.stringify(order));
-              sessionStorage.removeItem('checkoutCart');
-              if (payMethod === 'stripe') {
-                window.location.href = stripeUrl;
-              } else {
-                window.location.href = 'confirmation-commande.html';
-              }
-            });
+    sessionStorage.setItem('finalOrder', JSON.stringify(order));
+    sessionStorage.removeItem('checkoutCart');
+    window.location.href = buildStripeUrl(order);
   });
 </script>
 </body>
