@@ -274,47 +274,11 @@
           <div class="payment-method-desc">Paiement immédiat et sécurisé par Stripe</div>
         </span>
       </label>
-      <label class="payment-method">
-        <input type="radio" name="payMethod" value="virement" />
-        <span class="payment-method-icon">🏦</span>
-        <span class="payment-method-info">
-          <div class="payment-method-title">Virement bancaire</div>
-          <div class="payment-method-desc">Vous recevrez notre RIB par email</div>
-        </span>
-      </label>
-      <label class="payment-method">
-        <input type="radio" name="payMethod" value="cheque" />
-        <span class="payment-method-icon">✉️</span>
-        <span class="payment-method-info">
-          <div class="payment-method-title">Chèque</div>
-          <div class="payment-method-desc">À l'ordre de Ineska Burea</div>
-        </span>
-      </label>
-      <label class="payment-method">
-        <input type="radio" name="payMethod" value="especes" />
-        <span class="payment-method-icon">💶</span>
-        <span class="payment-method-info">
-          <div class="payment-method-title">Espèces à la remise en main propre</div>
-          <div class="payment-method-desc">Sur rendez-vous uniquement</div>
-        </span>
-      </label>
     </div>
 
     <div class="payment-details visible" id="details-stripe">
       <p><strong>Carte bancaire</strong><br/>
         Vous allez être redirigé vers une page de paiement sécurisée Stripe. Une fois le paiement effectué, vous reviendrez automatiquement sur notre site.</p>
-    </div>
-    <div class="payment-details" id="details-virement">
-      <p><strong>Virement bancaire</strong><br/>
-        Après validation de votre commande, vous recevrez notre RIB par email dans les 24h. Votre commande sera expédiée dès réception du virement.</p>
-    </div>
-    <div class="payment-details" id="details-cheque">
-      <p><strong>Chèque</strong><br/>
-        À adresser à : Ineska Burea, 112 avenue Paul Valéry, 83160 La Valette du Var. Votre commande sera expédiée dès réception et encaissement du chèque.</p>
-    </div>
-    <div class="payment-details" id="details-especes">
-      <p><strong>Espèces</strong><br/>
-        Contactez-nous par email ou téléphone pour convenir d'un rendez-vous de remise en main propre.</p>
     </div>
 
     <a href="boutique.html" class="back-link">← Retour à la boutique</a>
@@ -427,14 +391,26 @@
       delivery_address: order.adresse + ', ' + order.cp + ' ' + order.ville
     };
 
-    const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/test_3cIcMZ6MH7dd3TA6bD8IU00';
+    const STRIPE_LINKS = {
+      'Fer à Gaufrer Texture & Volume':       'https://buy.stripe.com/test_14A6oB9YT0OPbm2fMd8IU01',
+      'Tête Malléable Professionnelle 50cm':  'https://buy.stripe.com/test_4gMeV74Ez699fCi2Zr8IU02'
+    };
+    const STRIPE_LINK_BOTH = 'https://buy.stripe.com/test_3cIcMZ6MH7dd3TA6bD8IU00';
+
+    // Choisit le lien selon le contenu du panier
+    let stripeUrl;
+    if (cart.length === 1) {
+      stripeUrl = STRIPE_LINKS[cart[0].name] || STRIPE_LINK_BOTH;
+    } else {
+      stripeUrl = STRIPE_LINK_BOTH;
+    }
 
     emailjs.send('service_abc123', 'template_dt29ezt', emailParams)
             .then(() => {
               sessionStorage.setItem('finalOrder', JSON.stringify(order));
               sessionStorage.removeItem('checkoutCart');
               if (payMethod === 'stripe') {
-                window.location.href = STRIPE_PAYMENT_LINK;
+                window.location.href = stripeUrl;
               } else {
                 window.location.href = 'confirmation-commande.html';
               }
@@ -445,7 +421,7 @@
               sessionStorage.setItem('finalOrder', JSON.stringify(order));
               sessionStorage.removeItem('checkoutCart');
               if (payMethod === 'stripe') {
-                window.location.href = STRIPE_PAYMENT_LINK;
+                window.location.href = stripeUrl;
               } else {
                 window.location.href = 'confirmation-commande.html';
               }
